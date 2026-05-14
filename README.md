@@ -1,15 +1,3 @@
----
-title: Multimodal RAG Agent for Clothing Store
-emoji: 👕
-colorFrom: blue
-colorTo: purple
-sdk: gradio
-sdk_version: "5.6.0"
-python_version: "3.10"
-app_file: app.py
-pinned: false
----
-
 # Multimodal RAG Agent for Clothing Store
 
 A multimodal Retrieval-Augmented Generation (RAG) API that matches customer clothing images against a local product catalog using CLIP embeddings + ChromaDB, then returns product details as JSON.
