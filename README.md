@@ -1,3 +1,15 @@
+---
+title: Multimodal RAG Agent for Clothing Store
+emoji: 👕
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: "5.6.0"
+python_version: "3.10"
+app_file: app.py
+pinned: false
+---
+
 # Multimodal RAG Agent for Clothing Store
 
 A multimodal Retrieval-Augmented Generation (RAG) API that matches customer clothing images against a local product catalog using CLIP embeddings + ChromaDB, then returns product details as JSON.
@@ -94,10 +106,55 @@ Available endpoints:
 
 ## 5. Deploy to Hugging Face Spaces
 
-1. Create a new Space using **Gradio SDK**.
-2. Add secret `HUGGINGFACEHUB_API_TOKEN` in Space settings.
-3. Push project files to the Space repository.
-4. Space will install `requirements.txt` and serve the app.
+### Prerequisites
+- HuggingFace account and Space created at: https://huggingface.co/spaces/Nafizk368/Multimodal-RAG-Agent-for-Clothing-Store
+- Git installed locally
+- HuggingFace CLI authenticated: `huggingface-cli login`
+
+### Steps
+
+1. **Clone your Space repository** (replace with your Space URL):
+```bash
+git clone https://huggingface.co/spaces/Nafizk368/Multimodal-RAG-Agent-for-Clothing-Store
+cd Multimodal-RAG-Agent-for-Clothing-Store
+```
+
+2. **Add your project files**:
+```bash
+# Copy all project files into the cloned Space directory
+cp -r /path/to/local/project/* .
+```
+
+3. **Add your product images** (required):
+```bash
+# Create the images directory and add your product photos
+mkdir -p data/product_images
+cp /path/to/your/images/* data/product_images/
+```
+
+4. **Add to git and commit**:
+```bash
+git add .
+git commit -m "Add clothing store RAG agent"
+git push
+```
+
+5. **Set the HuggingFace API Secret** in Space UI:
+   - Go to your Space settings → **Secrets**
+   - Add: `HUGGINGFACEHUB_API_TOKEN` with your HuggingFace API key
+
+6. **Monitor deployment**:
+   - Space will automatically restart and install dependencies from `requirements.txt`
+   - Check the logs in the Space's **Logs** tab
+   - Once running, access at: `https://huggingface.co/spaces/Nafizk368/Multimodal-RAG-Agent-for-Clothing-Store`
+
+### Important Notes for Spaces
+
+- **Disk space**: Free tier has 50GB; the Chroma index and SQLite DB are created fresh on each restart
+- **Product images** must be included in the git repository (stored in `data/product_images/`)
+- **Data persistence**: The vector index rebuilds on startup if missing
+- **Hardware**: Free tier uses CPU; GPU is available on paid tiers
+- **Cold start**: First load may take 30-60 seconds while dependencies are installed and index is built
 
 ## 6. n8n Integration
 

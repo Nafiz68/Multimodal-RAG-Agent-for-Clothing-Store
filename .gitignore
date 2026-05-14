@@ -14,3 +14,4 @@ htmlcov/
 .idea/
 data/products.db
 data/chroma_store/
+# Keep data/product_images/ so images persist in HF Spaces
