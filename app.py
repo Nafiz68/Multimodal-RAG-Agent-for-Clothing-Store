@@ -1,22 +1,18 @@
-from __future__ import annotations
+import io
+import os
 
-from io import BytesIO
-
-import gradio as gr
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from PIL import Image, UnidentifiedImageError
+from fastapi.responses import HTMLResponse
+from PIL import Image
 
 from agent import ClothingAgent
-from indexer import build_index
 
-app = FastAPI(title="Clothing Store Product Identifier API")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -25,66 +21,77 @@ agent = ClothingAgent()
 
 
 @app.get("/health")
-def health_check() -> dict[str, str]:
-    return {"status": "ok", "model": "CLIP + Mistral-7B"}
+def health():
+    return {"status": "ok", "space": "clothing-rag-agent"}
 
 
 @app.post("/identify")
-async def identify(file: UploadFile = File(...)) -> dict:
-    try:
-        image_bytes = await file.read()
-        image = Image.open(BytesIO(image_bytes)).convert("RGB")
-    except UnidentifiedImageError:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "product_id": None,
-                "name": None,
-                "description": None,
-                "price": None,
-                "confidence_score": 0.0,
-                "message": "Unsupported or unreadable image file",
-            },
-        )
-    except Exception as exc:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "product_id": None,
-                "name": None,
-                "description": None,
-                "price": None,
-                "confidence_score": 0.0,
-                "message": f"Failed to read image: {exc}",
-            },
-        )
-
+async def identify(file: UploadFile = File(...)):
+    contents = await file.read()
+    image = Image.open(io.BytesIO(contents)).convert("RGB")
     result = agent.identify_product(image)
     return result
 
 
-@app.post("/reload-index")
-def reload_index() -> dict[str, str]:
-    build_index()
-    return {"status": "ok", "message": "Index reloaded"}
-
-
-def gradio_identify(image: Image.Image) -> dict:
-    return agent.identify_product(image)
-
-
-gradio_ui = gr.Interface(
-    fn=gradio_identify,
-    inputs=gr.Image(type="pil", label="Upload customer photo"),
-    outputs=gr.JSON(label="Matched Product"),
-    title="Clothing Store Product Identifier",
-    description="Upload a photo of a clothing item to find the matching product.",
-)
-
-app = gr.mount_gradio_app(app, gradio_ui, path="/")
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return """
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <title>Clothing RAG Agent</title>
+        <style>
+            body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; color: #111827; }
+            .wrap { max-width: 680px; margin: 48px auto; padding: 24px; }
+            .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 32px; }
+            h1 { margin: 0 0 8px; font-size: 26px; }
+            p { color: #6b7280; line-height: 1.6; }
+            input[type=file] { margin: 16px 0; display: block; }
+            button { background: #2563eb; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-size: 15px; }
+            button:hover { background: #1d4ed8; }
+            pre { background: #f3f4f6; padding: 16px; border-radius: 8px; font-size: 13px; overflow-x: auto; margin-top: 20px; min-height: 60px; }
+            .label { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+        </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <div class="card">
+                <h1>Clothing Store — Product Identifier</h1>
+                <p>Upload a photo of a clothing item to identify the matching product.</p>
+                <div class="label">Select image</div>
+                <input type="file" id="img-input" accept="image/*"/>
+                <button onclick="identify()">Identify Product</button>
+                <div class="label" style="margin-top:20px">Result</div>
+                <pre id="result">Result will appear here...</pre>
+            </div>
+        </div>
+        <script>
+            async function identify() {
+                const input = document.getElementById('img-input');
+                const result = document.getElementById('result');
+                if (!input.files.length) {
+                    result.textContent = 'Please select an image first.';
+                    return;
+                }
+                result.textContent = 'Identifying...';
+                const form = new FormData();
+                form.append('file', input.files[0]);
+                try {
+                    const res = await fetch('/identify', { method: 'POST', body: form });
+                    const data = await res.json();
+                    result.textContent = JSON.stringify(data, null, 2);
+                } catch (e) {
+                    result.textContent = 'Error: ' + e.message;
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """
 
 
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run("app:app", host="0.0.0.0", port=7860, reload=False)
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
