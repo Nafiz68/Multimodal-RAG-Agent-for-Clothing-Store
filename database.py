@@ -67,48 +67,62 @@ def get_all_products() -> list[dict[str, Any]]:
         return [dict(row) for row in rows]
 
 
+def clear_products() -> None:
+    with _get_connection() as conn:
+        conn.execute("DELETE FROM products")
+        conn.commit()
+
+
 def seed_sample_products() -> None:
-    # Original, minimal seed set — restore to 5 entries for user-provided assets
+    # Seed set aligned to the user-provided product image filenames.
     sample_products = [
         {
-            "product_id": "P-DRESS-001",
-            "name": "Floral Midi Summer Dress",
-            "description": "Lightweight floral midi dress with a fitted waist and breathable fabric.",
-            "price": 59.99,
-            "category": "Dresses",
-            "image_path": "data/product_images/dress_001.jpg",
+            "product_id": "P-COAT-001",
+            "name": "Classic Black Coat",
+            "description": "Timeless black coat with a tailored fit and warm lining.",
+            "price": 129.0,
+            "category": "Outerwear",
+            "image_path": "data/product_images/coat.jpg",
         },
         {
-            "product_id": "P-SHIRT-002",
-            "name": "Classic Oxford Button-Down Shirt",
-            "description": "Crisp cotton oxford shirt with a tailored fit for everyday wear.",
-            "price": 44.5,
-            "category": "Shirts",
-            "image_path": "data/product_images/shirt_002.jpg",
+            "product_id": "P-HOODIE-002",
+            "name": "Brown Hoodie",
+            "description": "Cozy brown hoodie with a soft fleece interior and adjustable drawstring hood.",
+            "price": 58.0,
+            "category": "Sweatshirts",
+            "image_path": "data/product_images/hoodie.jpg",
         },
         {
-            "product_id": "P-JEANS-003",
-            "name": "Slim Fit Indigo Denim Jeans",
-            "description": "Mid-rise slim fit jeans in stretch indigo denim with five-pocket styling.",
+            "product_id": "P-JACKET-003",
+            "name": "Red Puff Jacket",
+            "description": "Casual puff jacket with a cozy fill and adjustable cuffs.",
+            "price": 84.0,
+            "category": "Outerwear",
+            "image_path": "data/product_images/jacket.jpg",
+        },
+        {
+            "product_id": "P-JEANS-004",
+            "name": "Blue Jeans",
+            "description": "Classic straight-leg jeans with a durable denim finish.",
             "price": 72.0,
             "category": "Jeans",
-            "image_path": "data/product_images/jeans_003.jpg",
+            "image_path": "data/product_images/Jeans.jpg",
         },
         {
-            "product_id": "P-JACKET-004",
-            "name": "Lightweight Utility Jacket",
-            "description": "Water-resistant utility jacket with zip closure and adjustable cuffs.",
-            "price": 89.0,
-            "category": "Jackets",
-            "image_path": "data/product_images/jacket_004.jpg",
-        },
-        {
-            "product_id": "P-SHOES-005",
-            "name": "Everyday Knit Sneakers",
-            "description": "Comfortable knit sneakers with cushioned sole for all-day walking.",
+            "product_id": "P-SNEAKERS-005",
+            "name": "Everyday white Sneakers",
+            "description": "Lightweight sneakers with cushioned soles for daily wear.",
             "price": 64.25,
             "category": "Shoes",
-            "image_path": "data/product_images/sneakers_005.jpg",
+            "image_path": "data/product_images/sneakers.jpg",
+        },
+        {
+            "product_id": "P-TSHIRT-006",
+            "name": "Crew Neck green T-Shirt",
+            "description": "Soft cotton t-shirt with a regular fit and everyday comfort.",
+            "price": 22.0,
+            "category": "Tops",
+            "image_path": "data/product_images/tshirt.jpg",
         },
     ]
 
@@ -118,6 +132,7 @@ def seed_sample_products() -> None:
 
 def bootstrap() -> None:
     init_db()
+    clear_products()
     seed_sample_products()
 
 

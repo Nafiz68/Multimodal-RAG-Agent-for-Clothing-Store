@@ -11,6 +11,7 @@ from transformers import CLIPModel, CLIPProcessor
 BASE_DIR = Path(__file__).resolve().parent
 CHROMA_DIR = BASE_DIR / "data" / "chroma_store"
 COLLECTION_NAME = "product_images"
+MIN_CONFIDENCE_SCORE = 30.0
 
 
 class ImageRetriever:
@@ -63,7 +64,7 @@ class ImageRetriever:
         if not formatted:
             return {"match": False, "message": "No confident match found"}
 
-        if formatted[0]["confidence_score"] < 60:
+        if formatted[0]["confidence_score"] < MIN_CONFIDENCE_SCORE:
             return {"match": False, "message": "No confident match found"}
 
         return formatted

@@ -39,6 +39,10 @@ def build_index() -> None:
 
     CHROMA_DIR.mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+    try:
+        client.delete_collection(name=COLLECTION_NAME)
+    except Exception:
+        pass
     collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
     embedder = CLIPImageEmbeddingFunction()
