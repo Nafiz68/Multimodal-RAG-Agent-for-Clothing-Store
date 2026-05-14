@@ -1,0 +1,425 @@
+{
+  "name": "Multimodal-RAG-Agent-workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        384
+      ],
+      "id": "151c2c67-04f7-4a6f-ad09-98ec48034082",
+      "name": "Telegram Trigger",
+      "webhookId": "1c6b1b87-273a-467f-ba54-6fb9c1ef954d",
+      "credentials": {
+        "telegramApi": {
+          "id": "Your_Telegram_Credentials",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[0].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        384
+      ],
+      "id": "a5a7f38c-f2c2-4429-b632-43a42cc385cf",
+      "name": "Get a file",
+      "webhookId": "2aa6559c-aec9-4196-b54c-65f371d240d8",
+      "credentials": {
+        "telegramApi": {
+          "id": "Your_Telegram_Credentials",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "42515b4b-9ed7-4ae9-a163-6c91c6ad53ed",
+              "leftValue": "={{$json.confidence_score}}",
+              "rightValue": 60,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        384
+      ],
+      "id": "b5bfad8a-8c77-42c4-a1a0-ae7f2781c2ae",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer chat ID: {{$('Telegram Trigger').item.json.message.chat.id}}\n\n{% if $('Check Photo').item.json.is_new_product %}\nA customer just sent a photo and is interested in this product:\n- Product: {{$('RAG Identify').item.json.name}}\n- Original price: ${{$('RAG Identify').item.json.price}}\n- Confidence score: {{$('RAG Identify').item.json.confidence_score}}%\n\nGreet them warmly, introduce the product with excitement, state the price, and invite them to ask questions or make an offer. Include the calculated discount prices in your mental math but never show them all to the customer at once.\n\nDiscount reference (for your calculations only, never reveal this list):\n- 5% off = ${{($('RAG Identify').item.json.price * 0.95).toFixed(2)}}\n- 8% off = ${{($('RAG Identify').item.json.price * 0.92).toFixed(2)}}\n- 12% off = ${{($('RAG Identify').item.json.price * 0.88).toFixed(2)}}\n- 15% off = ${{($('RAG Identify').item.json.price * 0.85).toFixed(2)}}\n{% else %}\nThe customer replied: \"{{$('Telegram Trigger').item.json.message.text}}\"\n\nContinue the bargaining conversation based on the history. Apply the discount strategy rules. If they are pushing back, move exactly one step down the discount ladder.\n{% endif %}",
+        "options": {
+          "systemMessage": "You are Rafi, a friendly and professional sales assistant for AI Dokan, a clothing store.\n\nYOUR GOAL: Close the sale at the highest possible price. You may offer discounts but must maximize profit. Never reveal the discount limit to the customer.\n\nDISCOUNT STRATEGY — follow this order strictly, one step per customer pushback:\n- Step 1 (first response): No discount. Highlight value, quality, and uniqueness.\n- Step 2 (first pushback): Offer 5% off. Frame it as a special gesture just for them.\n- Step 3 (second pushback): Offer 8% off. Say it is your best offer.\n- Step 4 (third pushback): Offer 12% off. Say you are cutting into your own margin.\n- Step 5 (fourth pushback or more): Offer 15% off maximum. Say you are practically giving it away.\n- Never go below 15% off the original price under any circumstances.\n\nTONE RULES:\n- Be warm, friendly, and human. Never sound robotic or scripted.\n- Keep responses to 2 to 4 sentences maximum.\n- Never reveal you are an AI. If asked, say you are a sales assistant named Rafi.\n- Reinforce value in every message (\"This piece has been flying off our shelves!\").\n- Always end with a soft closing question or a call to action.\n- If the customer agrees to buy, state the final agreed price clearly and say: \"Reply CONFIRM to place your order!\" then stop bargaining.\n- If the customer goes off topic, gently redirect back to the product.\n- All prices are in USD."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1328,
+        288
+      ],
+      "id": "7169ff32-b949-4177-83b2-462c19c528fc",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        512
+      ],
+      "id": "e2c595f2-6af2-4c13-be41-aa1d55cd16d1",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Your_OPENAI_Credentials",
+          "name": "tomislavrubic"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Sorry, I couldn't clearly identify that item. Could you send a clearer photo or try a different angle?",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        544
+      ],
+      "id": "f265e7f3-a81e-475d-bc31-75cb04e34031",
+      "name": "Send a text message",
+      "webhookId": "0b313ae1-224d-4765-86be-c56d995e415e",
+      "credentials": {
+        "telegramApi": {
+          "id": "Your_Telegram_Credentials",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "361fd03a-49de-4bfe-b735-e0ce3b9c3152",
+              "name": "reply_text",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1680,
+        288
+      ],
+      "id": "8cbd933b-7dbb-4c36-9859-33d0ddac5bc3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_NGROK_ENDPOINT/identify",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        656,
+        384
+      ],
+      "id": "a00103cc-d61c-41e7-b49f-334c3a75326f",
+      "name": "RAG Identify"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatId }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1472,
+        512
+      ],
+      "id": "c821b638-5a4c-4f99-bd5f-d03a4cc9db1e",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b78fcea7-7b81-43b6-bc3c-eecddc76d593",
+              "name": "chatId",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        288
+      ],
+      "id": "d3c1764c-3367-4f5c-91be-1ee854a46578",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.reply_text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1888,
+        288
+      ],
+      "id": "f6e473b7-a1e1-4295-bfe2-709c1ffdb43d",
+      "name": "Send a text message1",
+      "webhookId": "e6b5b44e-68d9-4f37-834d-57066d016a55",
+      "credentials": {
+        "telegramApi": {
+          "id": "Your_Telegram_Credentials",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9dbc1a69-48ff-43d2-b2bd-c59728fde114",
+              "leftValue": "={{$json.message.photo.toString()}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        384
+      ],
+      "id": "234f4513-3964-4752-9d47-8688c53a01ca",
+      "name": "If1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "RAG Identify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG Identify": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "71210466-6b4c-4542-997d-d87f4590a00b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "",
+  "tags": []
+}
