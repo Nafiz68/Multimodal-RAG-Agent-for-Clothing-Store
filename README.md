@@ -16,7 +16,7 @@ A multimodal Retrieval-Augmented Generation (RAG) API that matches customer clot
 
 ## Project Structure
 
-- `app.py` - FastAPI + Gradio entry point
+- `app.py` - FastAPI entry point with a simple HTML test UI
 - `indexer.py` - One-time (or on-demand) image indexing into ChromaDB
 - `retriever.py` - Image query encoding + similarity search
 - `agent.py` - LangChain agent wrapper with `product_lookup` tool
@@ -86,7 +86,7 @@ POST /reload-index
 
 ## 4. Run Locally
 
-Start the app (FastAPI + mounted Gradio UI):
+Start the app (FastAPI + simple HTML UI):
 
 ```bash
 python app.py
@@ -97,6 +97,18 @@ Alternative command:
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 7860
 ```
+
+Run it through ngrok so you can test it from a public URL:
+
+```bash
+# 1. Start the app
+python app.py
+
+# 2. In a second terminal, expose port 7860
+ngrok http 7860
+```
+
+ngrok will print a public forwarding URL such as `https://xxxx.ngrok-free.app`. Open that URL in your browser and use the homepage or `/identify` endpoint.
 
 Available endpoints:
 
