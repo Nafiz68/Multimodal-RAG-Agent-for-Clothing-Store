@@ -161,7 +161,7 @@ git push
 Use an **HTTP Request** node:
 
 - Method: `POST`
-- URL: `https://your-space.hf.space/identify`
+- URL: `https://your-space.hf.space/identify` or `https://your-ngrok.dev/identify`
 - Body type: `form-data`
 - Field name: `file` (attach image binary)
 
