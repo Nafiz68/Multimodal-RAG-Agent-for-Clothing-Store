@@ -5,7 +5,8 @@ from io import BytesIO
 import gradio as gr
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
+from fastapi.responses import JSONResponse
+from PIL import Image, UnidentifiedImageError
 
 from agent import ClothingAgent
 from indexer import build_index
@@ -30,8 +31,34 @@ def health_check() -> dict[str, str]:
 
 @app.post("/identify")
 async def identify(file: UploadFile = File(...)) -> dict:
-    image_bytes = await file.read()
-    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    try:
+        image_bytes = await file.read()
+        image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    except UnidentifiedImageError:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "product_id": None,
+                "name": None,
+                "description": None,
+                "price": None,
+                "confidence_score": 0.0,
+                "message": "Unsupported or unreadable image file",
+            },
+        )
+    except Exception as exc:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "product_id": None,
+                "name": None,
+                "description": None,
+                "price": None,
+                "confidence_score": 0.0,
+                "message": f"Failed to read image: {exc}",
+            },
+        )
+
     result = agent.identify_product(image)
     return result
 

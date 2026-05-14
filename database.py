@@ -68,6 +68,7 @@ def get_all_products() -> list[dict[str, Any]]:
 
 
 def seed_sample_products() -> None:
+    # Original, minimal seed set — restore to 5 entries for user-provided assets
     sample_products = [
         {
             "product_id": "P-DRESS-001",
