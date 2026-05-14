@@ -26,8 +26,8 @@ class ClothingAgent:
         self.system_prompt = (
             "You are a helpful assistant for a clothing store. "
             "When a customer sends a photo, identify the product and "
-            "return its details in this exact JSON format: "
-            "{product_id, name, description, price, confidence_score, message}"
+            "return its details in this exact JSON format using the keys "
+            "product_id, name, description, price, confidence_score, and message."
         )
 
         self.tools = [
@@ -44,18 +44,21 @@ class ClothingAgent:
         self.agent = None
         hf_token = os.environ.get("HUGGINGFACEHUB_API_TOKEN", "").strip()
         if hf_token:
-            llm = HuggingFaceHub(
-                repo_id="mistralai/Mistral-7B-Instruct-v0.2",
-                model_kwargs={"temperature": 0.1, "max_new_tokens": 300},
-                huggingfacehub_api_token=hf_token,
-            )
-            self.agent = initialize_agent(
-                tools=self.tools,
-                llm=llm,
-                agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-                verbose=False,
-                agent_kwargs={"prefix": self.system_prompt},
-            )
+            try:
+                llm = HuggingFaceHub(
+                    repo_id="mistralai/Mistral-7B-Instruct-v0.2",
+                    model_kwargs={"temperature": 0.1, "max_new_tokens": 300},
+                    huggingfacehub_api_token=hf_token,
+                )
+                self.agent = initialize_agent(
+                    tools=self.tools,
+                    llm=llm,
+                    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                    verbose=False,
+                    agent_kwargs={"prefix": self.system_prompt},
+                )
+            except Exception:
+                self.agent = None
 
     def _product_lookup_tool(self, _: str) -> str:
         if self._current_image is None:
@@ -144,6 +147,11 @@ class ClothingAgent:
             raw_output = result.get("output", "") if isinstance(result, dict) else str(result)
             return self._parse_json_response(raw_output)
         except Exception as exc:
+            try:
+                return json.loads(self._product_lookup_tool("fallback"))
+            except Exception:
+                pass
+
             return {
                 "product_id": None,
                 "name": None,
